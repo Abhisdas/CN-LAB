@@ -1,60 +1,38 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <arpa/inet.h>
+#include<stdio.h>
+#include<sys/types.h>
+#include<sys/socket.h>
+#include<netinet/in.h>
+#include<arpa/inet.h>
+#include<fcntl.h>
+#include<string.h>
+int main()
+{
+int sockfd,fd1,length,i;
+char buf[100],buf1[100];
+struct sockaddr_in sa,ca;
 
-int main(){
+sockfd=socket(AF_INET,SOCK_STREAM,0);
 
-  char *ip = "127.0.0.1";
-  int port = 5566;
+sa.sin_family=AF_INET;
+sa.sin_addr.s_addr=inet_addr("127.0.0.1");
+sa.sin_port=htons(6034);
 
-  int server_sock, client_sock;
-  struct sockaddr_in server_addr, client_addr;
-  socklen_t addr_size;
-  char buffer[1024];
-  int n;
+i=bind(sockfd,(struct sockaddr *)&sa,sizeof(sa));
+printf("test %d%d\n",sockfd,i);
 
-  server_sock = socket(AF_INET, SOCK_STREAM, 0);
-  if (server_sock < 0){
-    perror("[-]Socket error");
-    exit(1);
-  }
-  printf("[+]TCP server socket created.\n");
+listen(sockfd,5);
 
-  memset(&server_addr, '\0', sizeof(server_addr));
-  server_addr.sin_family = AF_INET;
-  server_addr.sin_port = port;
-  server_addr.sin_addr.s_addr = inet_addr(ip);
+length=sizeof(sa);
+fd1=accept(sockfd,(struct sockaddr *)&ca,&length);
 
-  n = bind(server_sock, (struct sockaddr*)&server_addr, sizeof(server_addr));
-  if (n < 0){
-    perror("[-]Bind error");
-    exit(1);
-  }
-  printf("[+]Bind to the port number: %d\n", port);
+int k=recv(fd1,buf,100,0);
+buf[k]='\0';
+printf("%s\n",buf);
 
-  listen(server_sock, 5);
-  printf("Listening...\n");
+printf("Enter a message\t");
+gets(buf1);
+send(fd1,buf1,strlen(buf1),0);
 
-  while(1){
-    addr_size = sizeof(client_addr);
-    client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &addr_size);
-    printf("[+]Client connected.\n");
-
-    bzero(buffer, 1024);
-    recv(client_sock, buffer, sizeof(buffer), 0);
-    printf("Client: %s\n", buffer);
-
-    bzero(buffer, 1024);
-    strcpy(buffer, "HI, THIS IS SERVER. HAVE A NICE DAY!!!");
-    printf("Server: %s\n", buffer);
-    send(client_sock, buffer, strlen(buffer), 0);
-
-    close(client_sock);
-    printf("[+]Client disconnected.\n\n");
-
-  }
-
-  return 0;
+close(sockfd);
+close(fd1);
 }
